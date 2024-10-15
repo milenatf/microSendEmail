@@ -1,0 +1,55 @@
+# version: "3.7"
+services:
+  # image project
+  micro_send_email_app:
+    build:
+      args:
+        user: milena
+        uid: 1000
+      context: .
+      dockerfile: Dockerfile
+    working_dir: /var/www/
+    volumes:
+      - ./:/var/www
+    depends_on:
+      - micro_send_email_redis
+      - micro_send_email_queue
+    networks:
+      - micro_send_email_network
+
+  # nginx
+  micro_send_email_nginx:
+    image: nginx:alpine
+    ports:
+      - "8383:80"
+    volumes:
+      - ./:/var/www
+      - ./docker/nginx/:/etc/nginx/conf.d/
+    networks:
+      - micro_send_email_network
+
+  # queue
+  micro_send_email_queue:
+    build:
+      args:
+        user: milena
+        uid: 1000
+      context: .
+      dockerfile: Dockerfile
+    command: "php artisan queue:work"
+    volumes:
+      - ./:/var/www
+    networks:
+      - micro_send_email_network
+
+  # redis
+  micro_send_email_redis:
+    image: redis:latest
+    ports:
+      - 6372:6379
+    networks:
+      - micro_send_email_network
+
+networks:
+  micro_send_email_network:
+    driver: bridge
